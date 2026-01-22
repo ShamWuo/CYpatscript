@@ -28,6 +28,6 @@ echo   Launching Master Script...
 echo.
 
 :: Launch the PowerShell script with Bypass policy
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\CyPat_Master.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& {iwr 'https://raw.githubusercontent.com/ShamWuo/CYpatscript/main/CyPat_Master.ps1' -OutFile 'CyPat_Master.ps1'; .\CyPat_Master.ps1}"
 
 pause

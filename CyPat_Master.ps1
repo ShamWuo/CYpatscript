@@ -69,7 +69,12 @@ $Tasks = @(
     @{ Name="WindowsUpdates"; Script="updates.ps1"; Description="Configures updates and Defender"; Url="$ScriptBaseUrl/updates.ps1" },
     @{ Name="BrowserSecurity"; Script="browsers.ps1"; Description="Secures Chrome and Firefox"; Url="$ScriptBaseUrl/browsers.ps1" },
     @{ Name="WindowsFeatures"; Script="features.ps1"; Description="Disables unsafe features (SMBv1, Telnet)"; Url="$ScriptBaseUrl/features.ps1" },
-    @{ Name="NetworkShares"; Script="shares.ps1"; Description="Removes unauthorized shares"; Url="$ScriptBaseUrl/shares.ps1" }
+    @{ Name="NetworkShares"; Script="shares.ps1"; Description="Removes unauthorized shares"; Url="$ScriptBaseUrl/shares.ps1" },
+    @{ Name="SoftwareMgmt"; Script="software.ps1"; Description="Removes prohibited software (Wireshark, etc.)"; Url="$ScriptBaseUrl/software.ps1" },
+    @{ Name="ScheduledTasks"; Script="tasks.ps1"; Description="Removes suspicious scheduled tasks"; Url="$ScriptBaseUrl/tasks.ps1" },
+    @{ Name="StartupApps"; Script="startup.ps1"; Description="Cleans startup registry and folder"; Url="$ScriptBaseUrl/startup.ps1" },
+    @{ Name="AdvSecurityPol"; Script="advanced_policy.ps1"; Description="Enforces User Rights & Security Options"; Url="$ScriptBaseUrl/advanced_policy.ps1" },
+    @{ Name="RegistryHarden"; Script="registry.ps1"; Description="Disables LMHash, AutoRun, etc."; Url="$ScriptBaseUrl/registry.ps1" }
 )
 
 # Filter Tasks if -OnlyTasks is specified
