@@ -47,7 +47,10 @@ $Tasks = @(
     @{ Name="ServicesFirewall"; Script="services.ps1"; Description="Secures services and firewall"; Url="$ScriptBaseUrl/services.ps1" },
     @{ Name="AuditPolicy"; Script="audit.ps1"; Description="Enables audit logging"; Url="$ScriptBaseUrl/audit.ps1" },
     @{ Name="ProhibitedScanner"; Script="prohibited.ps1"; Description="Scans for banned files"; Url="$ScriptBaseUrl/prohibited.ps1" },
-    @{ Name="WindowsUpdates"; Script="updates.ps1"; Description="Configures updates and Defender"; Url="$ScriptBaseUrl/updates.ps1" }
+    @{ Name="WindowsUpdates"; Script="updates.ps1"; Description="Configures updates and Defender"; Url="$ScriptBaseUrl/updates.ps1" },
+    @{ Name="BrowserSecurity"; Script="browsers.ps1"; Description="Secures Chrome and Firefox"; Url="$ScriptBaseUrl/browsers.ps1" },
+    @{ Name="WindowsFeatures"; Script="features.ps1"; Description="Disables unsafe features (SMBv1, Telnet)"; Url="$ScriptBaseUrl/features.ps1" },
+    @{ Name="NetworkShares"; Script="shares.ps1"; Description="Removes unauthorized shares"; Url="$ScriptBaseUrl/shares.ps1" }
 )
 
 # ==========================================
