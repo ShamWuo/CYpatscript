@@ -1,0 +1,50 @@
+{
+    "authorizedUsers": [
+        "Administrator",
+        "CyberPatriot",
+        "Judge",
+        "User1"
+    ],
+    "authorizedAdmins": [
+        "Administrator",
+        "CyberPatriot"
+    ],
+    "githubScripts": [
+        {
+            "name": "UserManagement",
+            "relativePath": "scripts/users.ps1"
+        },
+        {
+            "name": "PasswordPolicy",
+            "relativePath": "scripts/passwords.ps1"
+        },
+        {
+            "name": "ServicesFirewall",
+            "relativePath": "scripts/services.ps1"
+        },
+        {
+            "name": "AuditPolicy",
+            "relativePath": "scripts/audit.ps1"
+        },
+        {
+            "name": "ProhibitedContent",
+            "relativePath": "scripts/prohibited.ps1"
+        },
+        {
+            "name": "WindowsUpdates",
+            "relativePath": "scripts/updates.ps1"
+        },
+        {
+            "name": "BrowserSecurity",
+            "relativePath": "scripts/browsers.ps1"
+        },
+        {
+            "name": "WindowsFeatures",
+            "relativePath": "scripts/features.ps1"
+        },
+        {
+            "name": "NetworkShares",
+            "relativePath": "scripts/shares.ps1"
+        }
+    ]
+}
