@@ -1,7 +1,12 @@
 # CyberPatriot Automation Master Launcher
-# Purpose: Download tasks and launch them in parallel
+# Purpose: Download tasks and launch them in parallel with robust logging and management
 # Author: Antigravity
-# Version: 1.0
+# Version: 2.0
+
+param(
+    [switch]$DryRun,
+    [string[]]$OnlyTasks  # e.g., -OnlyTasks "UserManagement","PasswordPolicy"
+)
 
 # ==========================================
 # PRE-FLIGHT CHECKS
@@ -14,7 +19,10 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
     Exit
 }
 
-# 2. Setup Logging
+# 2. TLS 1.2 Security Protocol (Critical for GitHub)
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+# 3. Setup Logging
 $LogDir = "C:\CyPat_Logs"
 if (!(Test-Path $LogDir)) { New-Item -ItemType Directory -Force -Path $LogDir | Out-Null }
 $MasterLog = Join-Path $LogDir ("Master_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".txt")
@@ -30,7 +38,7 @@ function Log-Master {
     else { Write-Host $Entry -ForegroundColor Cyan }
 }
 
-Log-Master "Master Launcher Started."
+Log-Master "Master Launcher v2.0 Started."
 
 # ==========================================
 # CONFIGURATION
@@ -39,8 +47,19 @@ Log-Master "Master Launcher Started."
 $ScriptBaseUrl = "https://raw.githubusercontent.com/ShamWuo/CYpatscript/main/scripts"
 $LocalScriptDir = Join-Path $PSScriptRoot "scripts"
 
+# Load Config if exists
+$ConfigPath = Join-Path $PSScriptRoot "config\config.json"
+if (Test-Path $ConfigPath) {
+    Log-Master "Loading configuration from config.json..."
+    try {
+        $Config = Get-Content $ConfigPath | ConvertFrom-Json
+        if ($Config.ScriptBaseUrl) { $ScriptBaseUrl = $Config.ScriptBaseUrl }
+    } catch {
+        Log-Master "Failed to load config.json - using defaults" "WARNING"
+    }
+}
+
 # Define Tasks
-# In a real scenario, these URLs would be valid.
 $Tasks = @(
     @{ Name="UserManagement"; Script="users.ps1"; Description="Removes unauthorized users"; Url="$ScriptBaseUrl/users.ps1" },
     @{ Name="PasswordPolicy"; Script="passwords.ps1"; Description="Enforces password security"; Url="$ScriptBaseUrl/passwords.ps1" },
@@ -53,6 +72,11 @@ $Tasks = @(
     @{ Name="NetworkShares"; Script="shares.ps1"; Description="Removes unauthorized shares"; Url="$ScriptBaseUrl/shares.ps1" }
 )
 
+# Filter Tasks if -OnlyTasks is specified
+if ($OnlyTasks) {
+    Log-Master "Filtering tasks: $OnlyTasks" "INFO"
+}
+
 # ==========================================
 # DOWNLOAD PHASE
 # ==========================================
@@ -61,52 +85,102 @@ if (!(Test-Path $LocalScriptDir)) {
     New-Item -ItemType Directory -Force -Path $LocalScriptDir | Out-Null
 }
 
-Log-Master "Starting Download Phase..."
+Log-Master "Checking internet connectivity..."
+try {
+    $null = Invoke-WebRequest -Uri "https://www.google.com" -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+    Log-Master "Internet connection confirmed." "SUCCESS"
+    $IsOnline = $true
+} catch {
+    Log-Master "No internet connection - will use local scripts only." "WARNING"
+    $IsOnline = $false
+}
 
-foreach ($Task in $Tasks) {
-    $LocalPath = Join-Path $LocalScriptDir $Task.Script
-    
-    # Try Download
-    try {
-        # Check connectivity first (simple ping)
-        # Note: Github might be blocked in some schools, so strictly relying on download is risky. 
-        # We try, if fail, check local.
-        
-        Log-Master "Attempting to download $($Task.Name)..."
-        # Using Invoke-WebRequest
-        Invoke-WebRequest -Uri $Task.Url -OutFile $LocalPath -ErrorAction Stop
+if ($IsOnline) {
+    Log-Master "Starting Download Phase..."
+    foreach ($Task in $Tasks) {
+        if ($OnlyTasks -and $Task.Name -notin $OnlyTasks) { continue }
 
-        Log-Master "Downloaded $($Task.Name) successfully." "SUCCESS"
-    } catch {
-        Log-Master "Download failed for $($Task.Name) (Expected if offline/no repo). Checking local cache..." "WARNING"
+        $LocalPath = Join-Path $LocalScriptDir $Task.Script
         
-        if (Test-Path $LocalPath) {
-            Log-Master "Found local copy of $($Task.Name). Using cached version." "SUCCESS"
-        } else {
-            Log-Master "CRITICAL: Script $($Task.Name) not found locally or remotely!" "ERROR"
-            # We continue, but this task will fail to launch
+        try {
+            Log-Master "Downloading $($Task.Name)..."
+            Invoke-WebRequest -Uri $Task.Url -OutFile $LocalPath -UseBasicParsing -ErrorAction Stop
+            Log-Master "Downloaded $($Task.Name) successfully." "SUCCESS"
+        } catch {
+            Log-Master "Download failed for $($Task.Name): $_" "WARNING"
         }
     }
 }
 
 # ==========================================
-# EXECUTION PHASE
+# VISUAL FEEDBACK & EXECUTION
 # ==========================================
+
+Write-Host "`n========================================" -ForegroundColor Cyan
+Write-Host "Tasks Ready to Launch:" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Cyan
+foreach ($Task in $Tasks) {
+    if ($OnlyTasks -and $Task.Name -notin $OnlyTasks) { continue }
+
+    if (Test-Path (Join-Path $LocalScriptDir $Task.Script)) {
+        Write-Host "  ✓ $($Task.Name) - $($Task.Description)" -ForegroundColor White
+    } else {
+        Write-Host "  ✗ $($Task.Name) - MISSING" -ForegroundColor Red
+    }
+}
+Write-Host ""
 
 Log-Master "Starting Parallel Execution Phase..."
 Start-Sleep -Seconds 2
 
 foreach ($Task in $Tasks) {
+    if ($OnlyTasks -and $Task.Name -notin $OnlyTasks) { 
+        Log-Master "Skipping $($Task.Name) (not selected)" "INFO"
+        continue 
+    }
+
     $LocalPath = Join-Path $LocalScriptDir $Task.Script
     
     if (Test-Path $LocalPath) {
+        
+        if ($DryRun) {
+            Log-Master "[DRY RUN] Would launch $($Task.Name)" "WARNING"
+            continue
+        }
+
+        # Create a wrapper that handles logging and window title
+        $WrapperPath = Join-Path $LocalScriptDir "wrapper_$($Task.Script)"
+        $WrapperContent = @"
+`$Host.UI.RawUI.WindowTitle = "CyberPatriot - $($Task.Name)"
+`$TaskLog = Join-Path "$LogDir" "$($Task.Name)_`$(Get-Date -Format 'HHmmss').txt"
+
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "$($Task.Name)" -ForegroundColor Green
+Write-Host "$($Task.Description)" -ForegroundColor Yellow
+Write-Host "========================================`n" -ForegroundColor Cyan
+
+"[$($Task.Name)] Started at `$(Get-Date)" | Out-File `$TaskLog
+
+try {
+    & "$LocalPath" 2>&1 | Tee-Object -FilePath `$TaskLog -Append
+    "`n[$($Task.Name)] Completed at `$(Get-Date)" | Out-File `$TaskLog -Append
+    Write-Host "`n[SUCCESS] Task completed!" -ForegroundColor Green
+} catch {
+    "`n[$($Task.Name)] ERROR: `$_" | Out-File `$TaskLog -Append
+    Write-Host "`n[ERROR] `$_" -ForegroundColor Red
+}
+
+Write-Host "`nLog: `$TaskLog" -ForegroundColor Cyan
+Read-Host "`nPress Enter to close"
+"@
+        $WrapperContent | Out-File $WrapperPath -Force
+
         try {
             Log-Master "Launching $($Task.Name)..."
             
-            # Use Start-Process to launch new window
-            # -NoExit keeps window open so user can see output
+            # Use Start-Process with -NoExit and Wrapper
             Start-Process -FilePath "powershell.exe" `
-                -ArgumentList "-ExecutionPolicy Bypass -File `"$LocalPath`"" `
+                -ArgumentList "-NoExit", "-ExecutionPolicy Bypass", "-File `"$WrapperPath`"" `
                 -Verb RunAs `
                 -WindowStyle Normal
             
@@ -121,10 +195,21 @@ foreach ($Task in $Tasks) {
     }
 }
 
-Log-Master "All tasks launched." "SUCCESS"
-Write-Host "`n========================================================" -ForegroundColor White
-Write-Host "  Review spawned windows for progress." -ForegroundColor White
-Write-Host "  Logs are being written to: $LogDir" -ForegroundColor White
-Write-Host "========================================================" -ForegroundColor White
+# ==========================================
+# COMPLETION SUMMARY
+# ==========================================
+
+Write-Host "`n========================================" -ForegroundColor Cyan
+Write-Host "Execution Summary:" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  Master Log: $MasterLog" -ForegroundColor White
+Write-Host "  Task Logs: $LogDir\*.txt" -ForegroundColor White
+Write-Host "`nNext Steps:" -ForegroundColor Yellow
+Write-Host "  1. Monitor spawned windows" -ForegroundColor White
+Write-Host "  2. Review logs for errors" -ForegroundColor White
+Write-Host "  3. Reboot when all complete" -ForegroundColor White
+Write-Host "========================================`n" -ForegroundColor Cyan
+
+Log-Master "Master Launcher sequence completed." "SUCCESS"
 Write-Host "Press any key to exit Master Launcher..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
