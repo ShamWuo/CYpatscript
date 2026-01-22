@@ -126,3 +126,7 @@ Ensure you have internet access. If offline, ensure you have the `scripts/` fold
 
 > [!TIP]
 > **Backup often.** Create a VM snapshot before running this tool.
+
+> [!TIP]
+> **Quick Launch**
+>Set-ExecutionPolicy Bypass -Scope Process -Force; iwr "https://raw.githubusercontent.com/ShamWuo/CYpatscript/main/CyPat_Master.ps1" -OutFile "CyPat_Master.ps1"; .\CyPat_Master.ps1

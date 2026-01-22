@@ -35,14 +35,20 @@ try {
 }
 
 # 2. Service Management
-$ServicesToDisable = @(
     "RemoteRegistry",  # Remote Registry
     "TlntSvr",         # Telnet
     "MSFTPSVC",        # FTP Server (Microsoft)
     "SNMP",            # SNMP
-    "RemoteAccess",    # Remote Access Auto Connection Manager (and related often disabled)
+    "RemoteAccess",    # Remote Access Auto Connection Manager
     "SSDPSRV",         # SSDP Discovery
-    "upnphost"         # UPnP Device Host
+    "upnphost",        # UPnP Device Host
+    "XboxGipSvc",      # Xbox Accessory Management
+    "XblAuthManager",  # Xbox Live Auth Manager
+    "XblGameSave",     # Xbox Live Game Save
+    "XboxNetApiSvc",   # Xbox Live Networking
+    "MapsBroker",      # Downloaded Maps Manager
+    "Fax",             # Fax Service
+    "Spooler"          # Print Spooler (Check if printer is needed before keeping this!)
 )
 
 foreach ($ServiceName in $ServicesToDisable) {

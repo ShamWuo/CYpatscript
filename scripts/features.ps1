@@ -51,5 +51,29 @@ foreach ($Feature in $Features) {
     }
 }
 
+# ==========================================
+# REGISTRY HARDENING
+# ==========================================
+
+function Set-RegVal {
+    param($Path, $Name, $Value, $Desc)
+    try {
+        if (!(Test-Path $Path)) { New-Item -Path $Path -Force | Out-Null }
+        Set-ItemProperty -Path $Path -Name $Name -Value $Value -ErrorAction Stop
+        Log-Action "Set Registry: $Desc ($Name = $Value)" "SUCCESS"
+    } catch {
+        Log-Action "Failed to set Registry: $Desc - $_" "ERROR"
+    }
+}
+
+# 1. Enable UAC (Admin Approval Mode)
+Set-RegVal "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" "EnableLUA" 1 "Enable UAC"
+
+# 2. Disable Remote Desktop (RDP) at Registry Level
+Set-RegVal "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server" "fDenyTSConnections" 1 "Disable RDP Connections"
+
+# 3. Privacy: Disable Advertising ID
+Set-RegVal "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo" "Enabled" 0 "Disable Advertising ID"
+
 Log-Action "Features Script Completed. REBOOT REQUIRED." "INFO"
 Start-Sleep -Seconds 5

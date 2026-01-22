@@ -63,6 +63,9 @@ Set-NetAccount "accounts /lockoutduration:30" "Lockout Duration to 30 mins"
 # Reset window: 30 mins
 Set-NetAccount "accounts /lockoutwindow:30" "Lockout Window to 30 mins"
 
+# Force Logoff: 30 mins (when login hours expire)
+Set-NetAccount "accounts /forcelogoff:30" "Force Logoff when hours expire"
+
 # 3. Complexity (Requires secedit as 'net accounts' doesn't cover complexity directly in a simple switch usually,
 # however, simpler method for V1 is attempting to use secedit which is more robust).
 
@@ -78,6 +81,12 @@ try {
         if ($Content -match "PasswordComplexity = 0") {
              $Content = $Content -replace "PasswordComplexity = 0", "PasswordComplexity = 1"
              Log-Action "Planned change: Enable Password Complexity" "INFO"
+        }
+
+        # ClearTextPassword (Reversible Encryption) => Disable (0)
+        if ($Content -match "ClearTextPassword = 1") {
+             $Content = $Content -replace "ClearTextPassword = 1", "ClearTextPassword = 0"
+             Log-Action "Planned change: Disable Reversible Encryption" "INFO"
         }
         
         # Save and Import

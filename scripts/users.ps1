@@ -88,6 +88,19 @@ try {
             Log-Action "Removed user: $($User.Name)" "SUCCESS"
         } else {
             Log-Action "User authorized: $($User.Name)" "INFO"
+            
+            # Force Password Change (Expire Password)
+            try {
+                # This flag forces user to change password at next login
+                $UserObj = [ADSI]"WinNT://$env:COMPUTERNAME/$($User.Name),user"
+                if ($UserObj.PasswordExpired -ne 1) {
+                    $UserObj.PasswordExpired = 1
+                    $UserObj.SetInfo()
+                    Log-Action "Forced password change for: $($User.Name)" "SUCCESS"
+                }
+            } catch {
+                 Log-Action "Failed to expire password for $($User.Name): $_" "WARNING"
+            }
         }
     }
 } catch {
